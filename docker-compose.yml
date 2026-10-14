@@ -1,0 +1,35 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Reach Ollama on the Docker host (Desktop / WSL2 with host.docker.internal)
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      CHECKPOINT_DB: /app/checkpoints/checkpoints.db
+    extra_hosts:
+      # Linux Engine fallback so host.docker.internal resolves to the host gateway
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./app:/app/app
+      - ./core:/app/core
+      - ./graph:/app/graph
+      - ./data:/app/data
+      - ./vectordb:/app/vectordb
+      - api-checkpoints:/app/checkpoints
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  api-checkpoints:

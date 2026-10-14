@@ -1,0 +1,107 @@
+"""Compile the LangGraph StateGraph with SQLite checkpointing.
+
+Why SqliteSaver: thread_id lets the API resume conversation state across
+requests without a separate Redis/Postgres dependency for a laptop demo.
+"""
+from __future__ import annotations
+
+import sqlite3
+
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import END, StateGraph
+
+from app.config import settings
+from graph.nodes import (
+    general_node,
+    generator_node,
+    grader_node,
+    rag_node,
+    rewriter_node,
+    router_node,
+    sql_node,
+)
+from graph.state import AgentState
+
+
+def route_by_type(state: AgentState) -> str:
+    """Map router classification to the next node name."""
+    return {
+        "rag": "rag_node",
+        "sql": "sql_node",
+        "general": "general_node",
+    }.get(state.get("query_type") or "rag", "rag_node")
+
+
+def route_after_grading(state: AgentState) -> str:
+    """Generate if relevant (or out of retries); otherwise rewrite and loop."""
+    if state.get("is_relevant"):
+        return "generator"
+    if state.get("retry_count", 0) < settings.MAX_RETRIES:
+        return "rewriter"
+    return "generator"
+
+
+def create_workflow():
+    graph = StateGraph(AgentState)
+
+    graph.add_node("router", router_node)
+    graph.add_node("rag_node", rag_node)
+    graph.add_node("sql_node", sql_node)
+    graph.add_node("general_node", general_node)
+    graph.add_node("grader", grader_node)
+    graph.add_node("rewriter", rewriter_node)
+    graph.add_node("generator", generator_node)
+
+    graph.set_entry_point("router")
+    graph.add_conditional_edges(
+        "router",
+        route_by_type,
+        {
+            "rag_node": "rag_node",
+            "sql_node": "sql_node",
+            "general_node": "general_node",
+        },
+    )
+    graph.add_edge("rag_node", "grader")
+    graph.add_edge("sql_node", "grader")
+    graph.add_edge("general_node", END)
+    graph.add_conditional_edges(
+        "grader",
+        route_after_grading,
+        {"generator": "generator", "rewriter": "rewriter"},
+    )
+    graph.add_edge("rewriter", "router")
+    graph.add_edge("generator", END)
+
+    settings.CHECKPOINT_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(settings.CHECKPOINT_DB), check_same_thread=False)
+    memory = SqliteSaver(conn)
+    return graph.compile(checkpointer=memory)
+
+
+workflow = create_workflow()
+
+
+def run_query(question: str, thread_id: str = "default") -> dict:
+    """Invoke the graph once and shape the API response fields."""
+    config = {"configurable": {"thread_id": thread_id}}
+    initial_state = {
+        "messages": [{"role": "user", "content": question}],
+        "original_question": question,
+        "query_type": None,
+        "context": None,
+        "is_relevant": False,
+        "relevance_score": 0.0,
+        "retry_count": 0,
+        "final_answer": None,
+    }
+    result = workflow.invoke(initial_state, config=config)
+    return {
+        "question": question,
+        "query_type": result.get("query_type"),
+        "answer": result.get("final_answer") or "No answer generated",
+        "is_relevant": result.get("is_relevant"),
+        "relevance_score": result.get("relevance_score"),
+        "retries": result.get("retry_count", 0),
+        "model": settings.OLLAMA_MODEL,
+    }

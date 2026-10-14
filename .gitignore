@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# Secrets / local env
+.env
+
+# Generated data & indexes
+data/retail.db
+data/retail.db-*
+vectordb/
+checkpoints.db
+checkpoints.db-shm
+checkpoints.db-wal
+
+# Windows download junk
+*:Zone.Identifier
+*.Zone.Identifier
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
