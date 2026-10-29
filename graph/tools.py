@@ -5,19 +5,15 @@ does NOT use ToolNode / tool-calling agents — the router picks a node, and tha
 node calls one tool. That keeps the control flow explicit for interviews.
 """
 from langchain_core.tools import Tool
-from langchain_ollama import ChatOllama
 
 from app.config import settings
 from core.database import execute_sql, load_schema_description
 from core.formatting import fiscal_context_for_prompt, format_sql_rows
+from core.llm import get_llm
 from core.vectorstore import VectorStoreManager
 
 vectorstore_manager = VectorStoreManager()
-llm = ChatOllama(
-    model=settings.OLLAMA_MODEL,
-    base_url=settings.OLLAMA_BASE_URL,
-    temperature=0,
-)
+llm = get_llm()
 
 
 def search_documents(query: str) -> str:

@@ -11,6 +11,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
 from app.config import settings
+from core.llm import model_name
 from graph.nodes import (
     general_node,
     generator_node,
@@ -103,5 +104,5 @@ def run_query(question: str, thread_id: str = "default") -> dict:
         "is_relevant": result.get("is_relevant"),
         "relevance_score": result.get("relevance_score"),
         "retries": result.get("retry_count", 0),
-        "model": settings.OLLAMA_MODEL,
+        "model": model_name(),
     }

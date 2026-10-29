@@ -14,9 +14,16 @@ class Settings(BaseSettings):
 
     PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
+    # LLM provider: "ollama" (local) or "groq" (hosted free tier)
+    LLM_PROVIDER: str = "ollama"
+
     # Ollama (local LLM)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
+
+    # Groq (hosted). Key lives only in .env, never in code.
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     # Embeddings
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"

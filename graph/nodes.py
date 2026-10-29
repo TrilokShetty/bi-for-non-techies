@@ -9,19 +9,15 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_ollama import ChatOllama
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from core.formatting import fiscal_context_for_prompt, inr_in_words_hint
+from core.llm import get_llm
 from graph.state import AgentState
 from graph.tools import tool_rag, tool_sql
 
-llm = ChatOllama(
-    model=settings.OLLAMA_MODEL,
-    base_url=settings.OLLAMA_BASE_URL,
-    temperature=0,
-)
+llm = get_llm()
 
 
 class RouterOutput(BaseModel):
@@ -117,7 +113,8 @@ omnichannel retail company. You can explain store/sales/inventory questions
 Respond briefly to: {question}
 
 If the topic is outside retail ops / this demo, say so politely and suggest
-asking about sales, inventory, returns, or company policies."""
+asking about sales, inventory, returns, or company policies.
+Reply in 1-2 short plain-text sentences: no markdown, no lists, no emoji."""
     response = llm.invoke(prompt)
     return {
         "context": "",
@@ -198,8 +195,13 @@ Context:
 Question: {question}
 
 Rules:
-- Stick to the context; if data is missing, say what is missing.
-- Mention the SQL or document source briefly when useful.
+- Reply like a chat message: 1-3 short sentences, under 60 words.
+- Plain text only. No markdown: no tables, headings, bold, bullets or emoji
+  (the answer is shown in a terminal).
+- Lead with the answer (the number or the rule), then one line of key detail.
+- Stick to the context; if data is missing, say what is missing in one sentence.
+- Never mention SQL, queries, tables, columns or file paths. For policies you may
+  name the document topic, e.g. "(Returns policy)".
 - Do not invent store brands or legal citations beyond the documents."""
 
     answer = llm.invoke(prompt).content
