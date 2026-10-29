@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     SCHEMA_PATH: Path = PROJECT_ROOT / "data" / "schema.md"
     VECTORDB_PATH: Path = PROJECT_ROOT / "vectordb"
     CHECKPOINT_DB: Path = PROJECT_ROOT / "checkpoints.db"
+    LOGS_DIR: Path = PROJECT_ROOT / "logs"
 
     # RAG / agent controls
     CHUNK_SIZE: int = 1000

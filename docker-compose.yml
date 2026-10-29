@@ -21,6 +21,7 @@ services:
       - ./graph:/app/graph
       - ./data:/app/data
       - ./vectordb:/app/vectordb
+      - ./logs:/app/logs
       - api-checkpoints:/app/checkpoints
     healthcheck:
       test:

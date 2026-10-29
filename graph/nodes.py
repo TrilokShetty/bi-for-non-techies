@@ -75,6 +75,8 @@ metrics, rag for "what does policy say"). Do not invent a mixed route."""
     updates.update(
         {
             "query_type": result.query_type,
+            # Kept in state (not just printed) so run logs show why a route was picked.
+            "route_reasoning": result.reasoning,
             "messages": [AIMessage(content=f"Routing to: {result.query_type}")],
         }
     )

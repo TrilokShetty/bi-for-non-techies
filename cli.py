@@ -66,6 +66,7 @@ def main():
     mode = "Docker / FastAPI Backend" if is_api_running else "Local In-Process Engine"
     print(f"Mode       : {mode}")
     print(f"Session ID : {thread_id}")
+    print(f"Log file   : logs/{thread_id}.log")
     print("-" * 64)
 
     while True:
@@ -84,7 +85,7 @@ def main():
 
         if user_input.lower() == "new":
             thread_id = str(uuid.uuid4())[:8]
-            print(f"\n[New conversation started. Session ID: {thread_id}]")
+            print(f"\n[New conversation started. Session ID: {thread_id}, log: logs/{thread_id}.log]")
             continue
 
         print("\nThinking...")

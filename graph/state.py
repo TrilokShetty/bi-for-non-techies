@@ -13,6 +13,7 @@ class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
     original_question: Optional[str]
     query_type: Optional[Literal["rag", "sql", "general"]]
+    route_reasoning: Optional[str]
     context: Optional[str]
     is_relevant: bool
     relevance_score: float

@@ -19,6 +19,7 @@ vectordb/
 checkpoints.db
 checkpoints.db-shm
 checkpoints.db-wal
+logs/
 
 # Windows download junk
 *:Zone.Identifier

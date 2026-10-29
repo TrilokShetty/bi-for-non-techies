@@ -6,12 +6,14 @@ requests without a separate Redis/Postgres dependency for a laptop demo.
 from __future__ import annotations
 
 import sqlite3
+import time
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
 from app.config import settings
 from core.llm import model_name
+from core.run_log import RunLog, format_update
 from graph.nodes import (
     general_node,
     generator_node,
@@ -84,19 +86,38 @@ workflow = create_workflow()
 
 
 def run_query(question: str, thread_id: str = "default") -> dict:
-    """Invoke the graph once and shape the API response fields."""
+    """Run the graph once, log every node's update, and shape the API response fields."""
     config = {"configurable": {"thread_id": thread_id}}
     initial_state = {
         "messages": [{"role": "user", "content": question}],
         "original_question": question,
         "query_type": None,
+        "route_reasoning": None,
         "context": None,
         "is_relevant": False,
         "relevance_score": 0.0,
         "retry_count": 0,
         "final_answer": None,
     }
-    result = workflow.invoke(initial_state, config=config)
+
+    # stream() instead of invoke() so each node's decision can be logged as it happens.
+    run_log = RunLog(thread_id, question)
+    started = last = time.perf_counter()
+    try:
+        updates = workflow.stream(initial_state, config=config, stream_mode="updates")
+        for step, update in enumerate(updates, 1):
+            now = time.perf_counter()
+            for node, changes in update.items():
+                run_log.add(format_update(step, node, changes, now - last))
+            last = now
+    except Exception as e:
+        run_log.add(f"\nERROR: {type(e).__name__}: {e}")
+        raise
+    finally:
+        run_log.add(f"\nTOTAL: {time.perf_counter() - started:.2f}s")
+        run_log.save()
+
+    result = workflow.get_state(config).values
     return {
         "question": question,
         "query_type": result.get("query_type"),

@@ -153,7 +153,7 @@ Pass the same `thread_id` again to continue the conversation.
 | Endpoint | What it does |
 |----------|--------------|
 | `POST /query` | Ask a question |
-| `POST /ingest` | Reload the policy documents |
+| `POST /ingest` | Load the policy documents into search (same as `make ingest`, run once) |
 | `GET /history/{thread_id}` | See a past conversation |
 | `GET /health` | Check the server is up |
 

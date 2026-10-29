@@ -1,4 +1,4 @@
-.PHONY: setup ingest run smoke chat docker-up docker-down
+.PHONY: setup ingest run smoke chat trace docker-up docker-down
 
 setup:
 	python scripts/setup_database.py
@@ -14,6 +14,10 @@ smoke:
 
 chat:
 	python cli.py
+
+# usage: make trace Q="What were total sales in Chennai last month?"
+trace:
+	python scripts/trace_query.py "$(Q)"
 
 docker-up:
 	docker compose up --build -d
